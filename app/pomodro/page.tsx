@@ -1,18 +1,24 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Text, OrbitControls } from '@react-three/drei'
-import * as THREE from 'three'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import * as THREE from 'three'
 
-function TimerDisplay({ time, progress, isDarkMode }) {
+interface TimerDisplayProps {
+  time: number;
+  isDarkMode: boolean;
+}
+
+function TimerDisplay({ time, isDarkMode }: TimerDisplayProps) {
   const { viewport } = useThree()
-  const groupRef = useRef()
-  const particlesRef = useRef()
+  const groupRef = useRef<THREE.Group>(null)
+  const particlesRef = useRef<THREE.Points>(null)
 
   useEffect(() => {
     if (particlesRef.current) {
@@ -39,7 +45,7 @@ function TimerDisplay({ time, progress, isDarkMode }) {
     state.camera.lookAt(0, 0, 0)
   })
 
-  const formatTime = (timeInSeconds) => {
+  const formatTime = (timeInSeconds: number) => {
     const hours = Math.floor(timeInSeconds / 3600)
     const minutes = Math.floor((timeInSeconds % 3600) / 60)
     const seconds = timeInSeconds % 60
@@ -90,22 +96,28 @@ export default function Component() {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
-    let interval = null
+    let interval: NodeJS.Timeout | null = null
     if (isActive && time > 0) {
       interval = setInterval(() => {
-        setTime((time) => time - 1)
+        setTime((prevTime) => prevTime - 1)
       }, 1000)
     } else if (time === 0) {
-      setIsWork((isWork) => !isWork)
+      setIsWork((prevIsWork) => !prevIsWork)
       setTime(isWork ? 
         breakTime.hours * 3600 + breakTime.minutes * 60 + breakTime.seconds :
         workTime.hours * 3600 + workTime.minutes * 60 + workTime.seconds
       )
       setIsActive(false)
     } else {
-      clearInterval(interval)
+      if (interval) {
+        clearInterval(interval)
+      }
     }
-    return () => clearInterval(interval)
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
   }, [isActive, time, isWork, workTime, breakTime])
 
   const toggleTimer = () => {
@@ -118,7 +130,7 @@ export default function Component() {
     setTime(workTime.hours * 3600 + workTime.minutes * 60 + workTime.seconds)
   }
 
-  const handleTimeChange = (type, field, value) => {
+  const handleTimeChange = (type: 'work' | 'break', field: 'hours' | 'minutes' | 'seconds', value: string) => {
     const newValue = Math.max(0, Math.min(parseInt(value) || 0, field === 'hours' ? 23 : 59))
     if (type === 'work') {
       setWorkTime(prev => ({ ...prev, [field]: newValue }))
@@ -152,7 +164,7 @@ export default function Component() {
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} />
           <OrbitControls enableZoom={false} enablePan={false} />
-          <TimerDisplay time={time} progress={progress} isDarkMode={isDarkMode} />
+          <TimerDisplay time={time} isDarkMode={isDarkMode} />
         </Canvas>
       </div>
       <div className={`w-full max-w-md p-6 rounded-t-lg shadow-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -229,11 +241,11 @@ export default function Component() {
             </div>
           </div>
         </div>
-        <div className="flex justify-center space-x-4">
-          <Button onClick={toggleTimer} variant={isDarkMode ? "outline" : "default"}>
+        <div className="flex justify-between">
+          <Button onClick={toggleTimer} className="flex-1 mx-1">
             {isActive ? 'Pause' : 'Start'}
           </Button>
-          <Button onClick={resetTimer} variant={isDarkMode ? "outline" : "default"}>
+          <Button onClick={resetTimer} className="flex-1 mx-1" variant="outline">
             Reset
           </Button>
         </div>
